@@ -1,0 +1,13 @@
+{
+  "go.toolsEnvVars": {
+    "GOOS": "js",
+    "GOARCH": "wasm"
+  },
+  "go.buildFlags": ["-tags=wasm"],
+  "go.lintFlags": ["-tags=wasm"],
+  "go.testFlags": ["-tags=wasm"],
+  "go.testEnvVars": {
+    "GOOS": "js",
+    "GOARCH": "wasm"
+  }
+}

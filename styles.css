@@ -1,0 +1,15 @@
+body {
+    background-color: #2e2e2e; /* Dark gray background */
+    color: #ffffff; /* White text */
+}
+.btn {
+    background-color: #4e4e4e; /* Darker gray for buttons */
+    color: #ffffff; /* White text on buttons */
+    border: none; /* No border for buttons */
+}
+.btn:hover {
+    background-color: #5e5e5e; /* Slightly lighter gray on hover */
+}
+.border {
+    border-color: #ffffff !important; /* White border for canvas */
+}
