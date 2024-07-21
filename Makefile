@@ -5,7 +5,7 @@ run: build
 	go build -o server server.go
 
 package: build
-	zip -9 wasmbugs.zip index.html wasm_exec.js main.wasm styles.css
+	zip -9 wasmbugs.zip index.html wasm_exec.js main.wasm styles.css bugs-logo.png bugs-favicon.ico
 
 clean:
 	rm -f server
