@@ -81,10 +81,14 @@ func (b *Bug) Mutate(delta int) {
 }
 
 func (b *Bug) selectTurn() int {
-	n := rand.IntN(b.totalOfWeights)
-	for i := range 6 {
-		if n < b.geneWeight[i] {
-			return i
+	if b.totalOfWeights == 0 {
+		return rand.IntN(6)
+	} else {
+		n := rand.IntN(b.totalOfWeights)
+		for i := range 6 {
+			if n < b.geneWeight[i] {
+				return i
+			}
 		}
 	}
 

@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	"math/rand/v2"
+	"strconv"
 	"syscall/js"
 )
 
@@ -51,20 +52,31 @@ type GameWorld struct {
 	gameCtx      js.Value
 	reportCanvas js.Value
 	reportCtx    js.Value
+
+	bugsBottomLine        int
+	redBugsBottomLine     int
+	magentaBugsBottomLine int
+	cyanBugsBottomLine    int
+	yellowBugsBottomLine  int
 }
 
 func NewGameWorld(width int, height int) *GameWorld {
 	result := &GameWorld{
-		Width:           width,
-		Height:          height,
-		InitialBacteria: 3,
-		ReseedBacteria:  10,
-		InitialBugCount: 20,
-		reseedTotal:     0,
-		cycle:           0,
-		bacteriaCount:   0,
-		bugs:            []*Bug{},
-		history:         make([]HistoryEntry, 0),
+		Width:                 width,
+		Height:                height,
+		InitialBacteria:       3,
+		ReseedBacteria:        10,
+		InitialBugCount:       20,
+		reseedTotal:           0,
+		cycle:                 0,
+		bacteriaCount:         0,
+		bugsBottomLine:        height,
+		redBugsBottomLine:     height,
+		magentaBugsBottomLine: height,
+		cyanBugsBottomLine:    height,
+		yellowBugsBottomLine:  height,
+		bugs:                  []*Bug{},
+		history:               make([]HistoryEntry, 0),
 	}
 	result.cells = make([]byte, width*height)
 
@@ -159,12 +171,15 @@ func (w *GameWorld) addHistoryEntry() {
 	}
 
 	w.history = append(w.history, entry)
+	if len(w.history) > w.Width {
+		w.history = w.history[len(w.history)-w.Width:]
+	}
 }
 
 func (w *GameWorld) Next() error {
 	w.cycle++
 
-	if w.cycle%100 == 0 {
+	if w.cycle%20 == 0 {
 		w.addHistoryEntry()
 	}
 
@@ -283,7 +298,13 @@ func (w *GameWorld) drawGameView() error {
 }
 
 func (w *GameWorld) drawBugHistory() {
-	w.reportCtx.Set("strokeStyle", "red")
+	w.reportCtx.Set("strokeStyle", "lightgray")
+	w.reportCtx.Call("beginPath")
+	w.reportCtx.Call("moveTo", 0, w.bugsBottomLine)
+	w.reportCtx.Call("lineTo", w.Width, w.bugsBottomLine)
+	w.reportCtx.Call("stroke")
+
+	w.reportCtx.Set("strokeStyle", "white")
 	w.reportCtx.Call("beginPath")
 
 	startIndex := 0
@@ -294,7 +315,10 @@ func (w *GameWorld) drawBugHistory() {
 	for i := startIndex; i < len(w.history); i++ {
 		h := w.history[i]
 		x := i - startIndex
-		y := w.Height - (h.BugCount * 2)
+		y := w.bugsBottomLine - h.BugCount - 2
+		if y < w.redBugsBottomLine+20 {
+			w.redBugsBottomLine = y - 30
+		}
 		if i == 0 {
 			w.reportCtx.Call("moveTo", x, y)
 		} else {
@@ -302,6 +326,173 @@ func (w *GameWorld) drawBugHistory() {
 		}
 	}
 	w.reportCtx.Call("stroke")
+}
+
+func (w *GameWorld) drawRedBugsHistory() {
+	w.reportCtx.Set("strokeStyle", "lightgray")
+	w.reportCtx.Call("beginPath")
+	w.reportCtx.Call("moveTo", 0, w.redBugsBottomLine)
+	w.reportCtx.Call("lineTo", w.Width, w.redBugsBottomLine)
+	w.reportCtx.Call("stroke")
+
+	w.reportCtx.Set("strokeStyle", "red")
+	w.reportCtx.Call("beginPath")
+
+	startIndex := 0
+	if len(w.history) > w.Width {
+		startIndex = len(w.history) - w.Width
+	}
+
+	var x int
+	for i := startIndex; i < len(w.history); i++ {
+		h := w.history[i]
+		x = i - startIndex
+		y := w.redBugsBottomLine - h.RedBugs - 2
+		if y < w.magentaBugsBottomLine+20 {
+			w.magentaBugsBottomLine = y - 30
+		}
+		if i == 0 {
+			w.reportCtx.Call("moveTo", x, y)
+		} else {
+			w.reportCtx.Call("lineTo", x, y)
+		}
+	}
+	w.reportCtx.Call("stroke")
+
+	w.reportCtx.Set("font", "12px Arial")
+	w.reportCtx.Set("fillStyle", "red")
+	text := strconv.Itoa(w.history[len(w.history)-1].RedBugs)
+	textMetrics := w.reportCtx.Call("measureText", text)
+	x = x - int(textMetrics.Get("width").Float()) - 5
+	if x < 1 {
+		x = 1
+	}
+	w.reportCtx.Call("fillText", text, x, w.redBugsBottomLine-5)
+}
+
+func (w *GameWorld) drawMagentaBugsHistory() {
+	w.reportCtx.Set("strokeStyle", "lightgray")
+	w.reportCtx.Call("beginPath")
+	w.reportCtx.Call("moveTo", 0, w.magentaBugsBottomLine)
+	w.reportCtx.Call("lineTo", w.Width, w.magentaBugsBottomLine)
+	w.reportCtx.Call("stroke")
+
+	w.reportCtx.Set("strokeStyle", "magenta")
+	w.reportCtx.Call("beginPath")
+
+	startIndex := 0
+	if len(w.history) > w.Width {
+		startIndex = len(w.history) - w.Width
+	}
+
+	var x int
+	for i := startIndex; i < len(w.history); i++ {
+		h := w.history[i]
+		x = i - startIndex
+		y := w.magentaBugsBottomLine - h.MagentaBugs - 2
+		if y < w.cyanBugsBottomLine+20 {
+			w.cyanBugsBottomLine = y - 30
+		}
+
+		if i == 0 {
+			w.reportCtx.Call("moveTo", x, y)
+		} else {
+			w.reportCtx.Call("lineTo", x, y)
+		}
+	}
+	w.reportCtx.Call("stroke")
+
+	w.reportCtx.Set("font", "12px Arial")
+	w.reportCtx.Set("fillStyle", "magenta")
+	text := strconv.Itoa(w.history[len(w.history)-1].MagentaBugs)
+	textMetrics := w.reportCtx.Call("measureText", text)
+	x = x - int(textMetrics.Get("width").Float()) - 5
+	if x < 1 {
+		x = 1
+	}
+	w.reportCtx.Call("fillText", text, x, w.magentaBugsBottomLine-5)
+
+}
+
+func (w *GameWorld) drawCyanBugsHistory() {
+	w.reportCtx.Set("strokeStyle", "lightgray")
+	w.reportCtx.Call("beginPath")
+	w.reportCtx.Call("moveTo", 0, w.cyanBugsBottomLine)
+	w.reportCtx.Call("lineTo", w.Width, w.cyanBugsBottomLine)
+	w.reportCtx.Call("stroke")
+
+	w.reportCtx.Set("strokeStyle", "cyan")
+	w.reportCtx.Call("beginPath")
+
+	startIndex := 0
+	if len(w.history) > w.Width {
+		startIndex = len(w.history) - w.Width
+	}
+
+	var x int
+	for i := startIndex; i < len(w.history); i++ {
+		h := w.history[i]
+		x = i - startIndex
+		y := w.cyanBugsBottomLine - h.CyanBugs - 2
+		if y < w.yellowBugsBottomLine+20 {
+			w.yellowBugsBottomLine = y - 30
+		}
+		if i == 0 {
+			w.reportCtx.Call("moveTo", x, y)
+		} else {
+			w.reportCtx.Call("lineTo", x, y)
+		}
+	}
+	w.reportCtx.Call("stroke")
+
+	w.reportCtx.Set("font", "12px Arial")
+	w.reportCtx.Set("fillStyle", "cyan")
+	text := strconv.Itoa(w.history[len(w.history)-1].CyanBugs)
+	textMetrics := w.reportCtx.Call("measureText", text)
+	x = x - int(textMetrics.Get("width").Float()) - 5
+	if x < 1 {
+		x = 1
+	}
+	w.reportCtx.Call("fillText", text, x, w.cyanBugsBottomLine-5)
+}
+
+func (w *GameWorld) drawYellowBugsHistory() {
+	w.reportCtx.Set("strokeStyle", "lightgray")
+	w.reportCtx.Call("beginPath")
+	w.reportCtx.Call("moveTo", 0, w.yellowBugsBottomLine)
+	w.reportCtx.Call("lineTo", w.Width, w.yellowBugsBottomLine)
+	w.reportCtx.Call("stroke")
+
+	w.reportCtx.Set("strokeStyle", "yellow")
+	w.reportCtx.Call("beginPath")
+
+	startIndex := 0
+	if len(w.history) > w.Width {
+		startIndex = len(w.history) - w.Width
+	}
+
+	var x int
+	for i := startIndex; i < len(w.history); i++ {
+		h := w.history[i]
+		x = i - startIndex
+		y := w.yellowBugsBottomLine - h.YellowBugs - 2
+		if i == 0 {
+			w.reportCtx.Call("moveTo", x, y)
+		} else {
+			w.reportCtx.Call("lineTo", x, y)
+		}
+	}
+	w.reportCtx.Call("stroke")
+
+	w.reportCtx.Set("font", "12px Arial")
+	w.reportCtx.Set("fillStyle", "yellow")
+	text := strconv.Itoa(w.history[len(w.history)-1].YellowBugs)
+	textMetrics := w.reportCtx.Call("measureText", text)
+	x = x - int(textMetrics.Get("width").Float()) - 5
+	if x < 1 {
+		x = 1
+	}
+	w.reportCtx.Call("fillText", text, x, w.yellowBugsBottomLine-5)
 }
 
 func (w *GameWorld) drawBacteriaHistory() {
@@ -317,7 +508,10 @@ func (w *GameWorld) drawBacteriaHistory() {
 		x := i - startIndex
 		h := w.history[i]
 		gap := float64(w.Height) / 50
-		y := w.Height - (int((h.BacteriaPercent*100)*gap) * 2)
+		y := w.Height - int((h.BacteriaPercent*100)*gap)
+		if y < w.bugsBottomLine {
+			w.bugsBottomLine = y - 25
+		}
 		if i == 0 {
 			w.reportCtx.Call("moveTo", x, y)
 		} else {
@@ -329,10 +523,15 @@ func (w *GameWorld) drawBacteriaHistory() {
 
 func (w *GameWorld) drawReportView() error {
 	w.DrawBackground(w.reportCanvas, w.reportCtx)
+
 	w.drawHUD(w.reportCtx)
 
 	w.drawBugHistory()
 	w.drawBacteriaHistory()
+	w.drawRedBugsHistory()
+	w.drawMagentaBugsHistory()
+	w.drawCyanBugsHistory()
+	w.drawYellowBugsHistory()
 
 	return nil
 }
